@@ -63,23 +63,23 @@ def get_page(url: str) -> str:
 
 if __name__ == "__main__":
     url = "http://slowwly.robertomurray.co.uk/delay/1000/url/http://www.example.com"
-    
+
     print("First call (not cached):")
     print(get_page(url)[:100])  # Print first 100 characters
-    
+
     print("\nSecond call (should be cached):")
     print(get_page(url)[:100])  # Print first 100 characters
-    
+
     print("\nAccess count:")
     redis_client = redis.Redis()
     print(redis_client.get(f"count:{url}").decode('utf-8'))
-    
+
     print("\nWait 11 seconds for cache to expire...")
     import time
     time.sleep(11)
-    
+
     print("\nThird call (cache should have expired):")
     print(get_page(url)[:100])  # Print first 100 characters
-    
+
     print("\nFinal access count:")
     print(redis_client.get(f"count:{url}").decode('utf-8'))
