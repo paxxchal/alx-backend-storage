@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
-Cache module for storing and retrieving
-data in Redis with method call counting and history.
+Cache module for storing and retrieving data
+in Redis with method call counting, history,
+and replay functionality.
 """
 
 import redis
@@ -34,8 +35,8 @@ def count_calls(method: Callable) -> Callable:
 
 def call_history(method: Callable) -> Callable:
     """
-    Decorator to store the history
-    of inputs and outputs for a particular function.
+    Decorator to store the history of inputs
+    and outputs for a particular function.
 
     Args:
         method (Callable): The method to be decorated.
@@ -63,6 +64,26 @@ def call_history(method: Callable) -> Callable:
 
         return output
     return wrapper
+
+
+def replay(method: Callable):
+    """
+    Display the history of calls of a particular function.
+
+    Args:
+        method (Callable): The method whose call history to display.
+    """
+    redis_instance = redis.Redis()
+    method_name = method.__qualname__
+    inputs = redis_instance.lrange(f"{method_name}:inputs", 0, -1)
+    outputs = redis_instance.lrange(f"{method_name}:outputs", 0, -1)
+    calls_count = len(inputs)
+
+    print(f"{method_name} was called {calls_count} times:")
+    for input_args, output in zip(inputs, outputs):
+        input_str = input_args.decode('utf-8')
+        output_str = output.decode('utf-8')
+        print(f"{method_name}(*{input_str}) -> {output_str}")
 
 
 class Cache:
@@ -140,3 +161,12 @@ class Cache:
             or None if the key doesn't exist.
         """
         return self.get(key, fn=int)
+
+
+if __name__ == "__main__":
+    cache = Cache()
+
+    cache.store("foo")
+    cache.store("bar")
+    cache.store(42)
+    replay(cache.store)
